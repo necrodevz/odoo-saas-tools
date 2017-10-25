@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 import requests
-import xmlrpclib
+import xmlrpc.client
 
 from odoo import models, fields, api
 from odoo import SUPERUSER_ID as SI
@@ -19,10 +19,10 @@ class SaasPortalServer(models.Model):
         db = db_name
         username = 'admin'
         password = self.password
-        common = xmlrpclib.ServerProxy('{}/xmlrpc/2/common'.format(url))
+        common = xmlrpc.client.ServerProxy('{}/xmlrpc/2/common'.format(url))
         uid = common.authenticate(db, username, password, {})
 
-        return db, uid, password, xmlrpclib.ServerProxy('{}/xmlrpc/2/object'.format(url))
+        return db, uid, password, xmlrpc.client.ServerProxy('{}/xmlrpc/2/object'.format(url))
 
     @api.multi
     def _get_odoo_version(self):
@@ -119,11 +119,11 @@ class SaasPortalServer(models.Model):
                 'website_published': True,
                 'seo_url': demo_module.get('demo_url'),
                 'description': demo_module.get('demo_summary'),
-                'image': images_res and images_res.popitem()[1] or None,
+                'image': images_res and images_res.pop(0)[1] or None,
                 'sale_on_website': False,
                 'saas_demo': True,
                 'type': 'service',
-                'product_image_ids': images_res and [(0, 0, {'name': name, 'image': image}) for name, image in images_res.iteritems()] or None,
+                'product_image_ids': images_res and [(0, 0, {'name': name, 'image': image}) for name, image in images_res] or None,
             }
             product_template = product_template_obj.with_context({
                 'create_product_product': False
@@ -243,6 +243,13 @@ class SaasPortalServer(models.Model):
         return True
 
 
+    @api.model
+    def update_all_templates(self):
+        servers = self.env['saas_portal.server'].search([])
+        for server in servers:
+            server.update_templates()
+
+
 class SaaSPortalDemoPlanModule(models.Model):
     _name = 'saas_portal.demo_plan_module'
     _rec_name = 'technical_name'
@@ -294,6 +301,6 @@ class SaasPortalDatabase(models.Model):
         db = self.name
         username = 'admin'
         password = self.password
-        common = xmlrpclib.ServerProxy('{}/xmlrpc/2/common'.format(url))
+        common = xmlrpc.client.ServerProxy('{}/xmlrpc/2/common'.format(url))
         uid = common.authenticate(db, username, password, {})
-        return db, uid, password, xmlrpclib.ServerProxy('{}/xmlrpc/2/object'.format(url))
+        return db, uid, password, xmlrpc.client.ServerProxy('{}/xmlrpc/2/object'.format(url))
